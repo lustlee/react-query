@@ -1,7 +1,8 @@
-import { Col, Container, Row } from 'react-bootstrap';
+import { Button, Col, Container, Row } from 'react-bootstrap';
 import { CoinsTable } from './components/CoinsTable';
 import axios from 'axios';
 import { useQuery } from 'react-query';
+import { useState } from 'react';
 
 const options = {
 	method: 'GET',
@@ -12,9 +13,9 @@ const options = {
 };
 
 // TODO: Новый подход с React-query.
-const fetchCoins = async () => {
+const fetchCoins = async (page: number) => {
 	const { data } = await axios.get(
-		'https://openapiv1.coinstats.app/coins?limit=10',
+		`https://openapiv1.coinstats.app/coins?page=${page}&limit=10`,
 		options
 	);
 
@@ -47,8 +48,16 @@ function App() {
 	// 	void fetchCoins();
 	// }, []);
 
+	const [page, setPage] = useState(1);
 	//                                        Ключ запроса, Сама функция запроса
-	const { isLoading, isError, data } = useQuery('coins', fetchCoins);
+	const { isLoading, isError, data } = useQuery(
+		['coins', page],
+		() => fetchCoins(page),
+		{
+			keepPreviousData: true,
+			refetchOnWindowFocus: false,
+		}
+	);
 
 	if (isLoading) {
 		return <h3>Loading ...</h3>;
@@ -64,11 +73,17 @@ function App() {
 
 	return (
 		<>
-			<Container className='d-flex align-items-center justify-content-center text-center not-found-container mt-5 '>
+			<Container className='d-flex align-items-center justify-content-center text-center not-found-container mt-5'>
 				<Row>
-					<Col>
-						<CoinsTable data={data} />
-					</Col>
+					<CoinsTable data={data} />
+
+					<Button
+						onClick={() => setPage((p: number) => p - 1)}
+						disabled={page === 1}
+					>
+						Prev
+					</Button>
+					<Button onClick={() => setPage((p: number) => p + 1)}>Next</Button>
 				</Row>
 			</Container>
 		</>
